@@ -1,30 +1,29 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"os"
-	"os/signal"
 
+	vendingmachine "github.com/bcmmbaga/vending-machine"
 	"github.com/bcmmbaga/vending-machine/api"
 )
 
+var serverConfig vendingmachine.Config
+
+func init() {
+	config, err := vendingmachine.LoadConfiguration("")
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	serverConfig = *config
+
+}
+
 func main() {
+	apiServer := api.NewServer(&serverConfig)
 
-	port := ":8080"
-
-	// 	//gracefully shutdown server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
-
-	go func() {
-		server := api.NewServer()
-		if err := server.Start(port); err != nil {
-			log.Fatalln(err.Error())
-		}
-	}()
-
-	<-c
-	fmt.Println("Interrupt received gracefully shutting down all services")
+	if err := apiServer.Start(); err != nil {
+		log.Fatalln(err.Error())
+	}
 
 }
