@@ -18,18 +18,18 @@ type api struct {
 	// s vendingmachine.Service
 	handler http.Handler
 
-	client *storage.Connection
+	conn *storage.Connection
 
 	config *vendingmachine.Config
 }
 
 // NewServer initiate new http.Handler with API endpoints to serve.
-func NewServer(config *vendingmachine.Config) *api {
+func NewServer(config *vendingmachine.Config, conn *storage.Connection) *api {
 	r := gin.Default()
 
 	r.Use(authenticationMiddleware)
 
-	api := &api{config: config}
+	api := &api{config: config, conn: conn}
 
 	user := r.Group("/users")
 	user.POST("", api.SignUpNewUser)
@@ -51,7 +51,7 @@ func (s *api) Start() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		s.client.Disconnect(ctx)
+		s.conn.Disconnect(ctx)
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()

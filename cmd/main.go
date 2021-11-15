@@ -5,6 +5,7 @@ import (
 
 	vendingmachine "github.com/bcmmbaga/vending-machine"
 	"github.com/bcmmbaga/vending-machine/api"
+	"github.com/bcmmbaga/vending-machine/storage"
 )
 
 var serverConfig vendingmachine.Config
@@ -20,7 +21,13 @@ func init() {
 }
 
 func main() {
-	apiServer := api.NewServer(&serverConfig)
+
+	conn, err := storage.Dial(&serverConfig)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	apiServer := api.NewServer(&serverConfig, conn)
 
 	if err := apiServer.Start(); err != nil {
 		log.Fatalln(err.Error())
