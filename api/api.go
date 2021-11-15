@@ -31,7 +31,7 @@ func NewServer(config *vendingmachine.Config, conn *storage.Connection) *api {
 
 	api := &api{config: config, conn: conn}
 
-	user := r.Group("/users")
+	user := r.Group("/user")
 	user.POST("", api.SignUpNewUser)
 
 	api.handler = r
@@ -52,7 +52,6 @@ func (s *api) Start() error {
 		defer cancel()
 
 		s.conn.Disconnect(ctx)
-
 		ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 

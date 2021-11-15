@@ -1,6 +1,8 @@
 package models
 
 import (
+	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,10 +20,14 @@ func NewUser(username string, password string, role string) (*User, error) {
 		return nil, err
 	}
 
+	if role != "buyer" && role != "seller" {
+		return nil, errors.New("unknown role type")
+	}
+
 	return &User{
 		Username: username,
 		Password: pwd,
-		Role:     password,
+		Role:     role,
 		Deposit:  0,
 	}, nil
 
