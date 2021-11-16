@@ -41,8 +41,8 @@ func NewServer(config *vendingmachine.Config, conn *storage.Connection) *api {
 	user.POST("", api.SignUpNewUser)
 	user.DELETE("", api.DeleteUser)
 
-	r.POST("/reset", api.ResetDeposit).Use(api.buyersOnlyMiddleware)
 	r.POST("/signin", api.signin)
+	r.POST("/reset", api.buyersOnlyMiddleware, api.ResetDeposit)
 
 	api.handler = r
 
