@@ -15,6 +15,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+const (
+	usernameContext = "username"
+)
+
 type api struct {
 	// s vendingmachine.Service
 	handler http.Handler
@@ -26,15 +30,19 @@ type api struct {
 
 // NewServer initiate new http.Handler with API endpoints to serve.
 func NewServer(config *vendingmachine.Config, conn *storage.Connection) *api {
-	r := gin.Default()
-
-	r.Use(authenticationMiddleware)
-
 	api := &api{config: config, db: conn.Database(config.DatabaseName)}
 
+	r := gin.Default()
+
+	r.Use(api.authenticationMiddleware)
+
 	user := r.Group("/user")
+	user.GET("", api.GetUser)
 	user.POST("", api.SignUpNewUser)
-	user.DELETE("/:id", api.DeleteUser)
+	user.DELETE("", api.DeleteUser)
+
+	r.POST("/reset", api.ResetDeposit).Use(api.buyersOnlyMiddleware)
+	r.POST("/signin", api.signin)
 
 	api.handler = r
 

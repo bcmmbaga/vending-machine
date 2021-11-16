@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Host         string `required:"true" split_words:"true"`
 	Port         string `required:"true" split_words:"true"`
+	Secret       string `required:"true" split_words:"true"`
 	DatabaseName string `required:"true" split_words:"true"`
 	DatabaseURI  string `required:"true" split_words:"true"`
 }

@@ -43,10 +43,49 @@ func (a *api) SignUpNewUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, &user)
 }
 
-func (a *api) DeleteUser(c *gin.Context) {
-	username, ok := c.Params.Get("id")
+func (a *api) GetUser(c *gin.Context) {
+	username := c.GetString(usernameContext)
 
-	if username == "" && !ok {
+	if username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "missing username in request"})
+		return
+	}
+
+	user := models.User{}
+
+	coll := a.db.Collection("users")
+	err := coll.FindOne(c.Request.Context(), bson.M{"username": username}).Decode(&user)
+	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			c.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+func (a *api) ResetDeposit(c *gin.Context) {
+	coll := a.db.Collection("users")
+
+	username := c.GetString(usernameContext)
+
+	_, err := coll.UpdateOne(c.Request.Context(), bson.M{"username": username}, bson.M{"$set": bson.M{"deposit": 0}})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to reset deposit"})
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
+}
+
+func (a *api) DeleteUser(c *gin.Context) {
+	username := c.GetString(usernameContext)
+
+	if username == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "missing username in request uri"})
 		return
 	}
@@ -54,8 +93,8 @@ func (a *api) DeleteUser(c *gin.Context) {
 	user := models.User{}
 
 	coll := a.db.Collection("users")
-	res := coll.FindOneAndDelete(c.Request.Context(), bson.M{"username": username})
-	if err := res.Decode(&user); err != nil {
+	err := coll.FindOneAndDelete(c.Request.Context(), bson.M{"username": username}).Decode(&user)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to delete user acccount"})
 		return
 	}
