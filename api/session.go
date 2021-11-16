@@ -39,28 +39,54 @@ func (a *api) signin(c *gin.Context) {
 	err = res.Decode(&user)
 	if err != nil {
 		if res.Err() == mongo.ErrNoDocuments {
-			c.JSON(http.StatusForbidden, gin.H{"message": "account username/password is incorrect"})
+			c.JSON(http.StatusForbidden, gin.H{"message": "Account username/password is incorrect"})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "unexpected error occured"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unexpected error occured"})
 		return
 	}
 
 	authenticated := user.Authenticate(params.Password)
 
 	if !authenticated {
-		c.JSON(http.StatusForbidden, gin.H{"message": "account username/password is incorrect"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Account username/password is incorrect"})
 		return
 	}
 
 	token, err := newAPIToken(user.Username, a.config.Secret)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to initiate session token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to initiate session token"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	session := models.NewSession(params.Username, token)
+	coll = a.db.Collection("sessions")
+
+	// check if there is any active session for this user
+	res = coll.FindOne(c.Request.Context(), bson.M{"username": params.Username, "status": "active"})
+	if err := res.Err(); err != nil {
+		if err == mongo.ErrNoDocuments {
+			_, err = coll.InsertOne(c.Request.Context(), session)
+			if err != nil {
+				c.JSON(http.StatusInsufficientStorage, gin.H{"message": "Failed to save session"})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{"token": token})
+			return
+		}
+
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to verify user session",
+		})
+		return
+	}
+
+	c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+		"message": "There is already an active session using your account",
+	})
+
 }
 
 // newAPIToken generate API token with 30 days expiring duration for authorizing other request.

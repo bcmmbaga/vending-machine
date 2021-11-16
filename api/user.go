@@ -24,7 +24,7 @@ func (a *api) SignUpNewUser(c *gin.Context) {
 	coll := a.db.Collection("users")
 	res := coll.FindOne(c.Request.Context(), bson.M{"username": params.Username})
 	if res.Err() != mongo.ErrNoDocuments {
-		c.JSON(http.StatusForbidden, gin.H{"message": "username already existed"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Username already existed"})
 		return
 	}
 
@@ -36,7 +36,7 @@ func (a *api) SignUpNewUser(c *gin.Context) {
 
 	_, err = coll.InsertOne(c.Request.Context(), &user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to save new user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save new user"})
 		return
 	}
 
@@ -47,7 +47,7 @@ func (a *api) GetUser(c *gin.Context) {
 	username := c.GetString(usernameContext)
 
 	if username == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "missing username in request"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Missing username in request"})
 		return
 	}
 
@@ -56,8 +56,8 @@ func (a *api) GetUser(c *gin.Context) {
 	coll := a.db.Collection("users")
 	err := coll.FindOne(c.Request.Context(), bson.M{"username": username}).Decode(&user)
 	if err != nil {
-		if err != mongo.ErrNoDocuments {
-			c.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
+		if err == mongo.ErrNoDocuments {
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
 			return
 		}
 
@@ -75,7 +75,7 @@ func (a *api) ResetDeposit(c *gin.Context) {
 
 	_, err := coll.UpdateOne(c.Request.Context(), bson.M{"username": username}, bson.M{"$set": bson.M{"deposit": 0}})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to reset deposit"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to reset deposit"})
 		return
 	}
 
@@ -86,7 +86,7 @@ func (a *api) DeleteUser(c *gin.Context) {
 	username := c.GetString(usernameContext)
 
 	if username == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "missing username in request uri"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Missing username in request uri"})
 		return
 	}
 
@@ -95,7 +95,7 @@ func (a *api) DeleteUser(c *gin.Context) {
 	coll := a.db.Collection("users")
 	err := coll.FindOneAndDelete(c.Request.Context(), bson.M{"username": username}).Decode(&user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to delete user acccount"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete user acccount"})
 		return
 	}
 

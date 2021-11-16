@@ -37,7 +37,7 @@ func (a *api) authenticationMiddleware(c *gin.Context) {
 
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-					"message": "invalid authorization token",
+					"message": "Invalid authorization token",
 				})
 				return
 			}
@@ -45,15 +45,28 @@ func (a *api) authenticationMiddleware(c *gin.Context) {
 			claims, ok := token.Claims.(*apiTokenClaims)
 			if !ok && !token.Valid {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-					"message": "invalid authorization token",
+					"message": "Invalid authorization token",
 				})
 				return
 			}
 
-			c.Set("username", claims.Username)
+			coll := a.db.Collection("sessions")
+			// validate session token if is active
+			session := models.Session{}
+			err = coll.FindOne(c.Request.Context(), bson.M{"username": claims.Username, "status": "active"}).Decode(&session)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "Invalid session token"})
+				return
+			}
 
-			//verify user account and then if account is present then validate
+			if session.Token != authHeader {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "Invalid session token"})
+				return
+			}
+
+			c.Set(usernameContext, claims.Username)
 			c.Next()
+
 		} else {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"message": "Missing Authorization header",
@@ -74,17 +87,17 @@ func (a *api) buyersOnlyMiddleware(c *gin.Context) {
 	err := coll.FindOne(c.Request.Context(), bson.M{"username": username}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "account not found"})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "Account not found"})
 			return
 		}
 
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "failed to process the request"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "Failed to process the request"})
 		return
 	}
 
 	ok := user.HasRole("buyer")
 	if !ok {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "account permission failed"})
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "Account permission failed"})
 		return
 	}
 
