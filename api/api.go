@@ -12,13 +12,14 @@ import (
 	vendingmachine "github.com/bcmmbaga/vending-machine"
 	"github.com/bcmmbaga/vending-machine/storage"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type api struct {
 	// s vendingmachine.Service
 	handler http.Handler
 
-	conn *storage.Connection
+	db *mongo.Database
 
 	config *vendingmachine.Config
 }
@@ -29,10 +30,11 @@ func NewServer(config *vendingmachine.Config, conn *storage.Connection) *api {
 
 	r.Use(authenticationMiddleware)
 
-	api := &api{config: config, conn: conn}
+	api := &api{config: config, db: conn.Database(config.DatabaseName)}
 
 	user := r.Group("/user")
 	user.POST("", api.SignUpNewUser)
+	user.DELETE("/:id", api.DeleteUser)
 
 	api.handler = r
 
@@ -51,7 +53,7 @@ func (s *api) Start() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		s.conn.Disconnect(ctx)
+		s.db.Client().Disconnect(ctx)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 

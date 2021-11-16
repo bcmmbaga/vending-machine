@@ -21,7 +21,7 @@ func (a *api) SignUpNewUser(c *gin.Context) {
 		}
 	}
 
-	coll := a.conn.Database(a.config.DatabaseName).Collection("users")
+	coll := a.db.Collection("users")
 	res := coll.FindOne(c.Request.Context(), bson.M{"username": params.Username})
 	if res.Err() != mongo.ErrNoDocuments {
 		c.JSON(http.StatusForbidden, gin.H{"message": "username already existed"})
@@ -41,4 +41,25 @@ func (a *api) SignUpNewUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, &user)
+}
+
+func (a *api) DeleteUser(c *gin.Context) {
+	username, ok := c.Params.Get("id")
+
+	if username == "" && !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "missing username in request uri"})
+		return
+	}
+
+	user := models.User{}
+
+	coll := a.db.Collection("users")
+	res := coll.FindOneAndDelete(c.Request.Context(), bson.M{"username": username})
+	if err := res.Decode(&user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to delete user acccount"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+
 }
