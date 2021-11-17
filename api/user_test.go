@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,7 @@ import (
 	"github.com/bcmmbaga/vending-machine/models"
 	"github.com/bcmmbaga/vending-machine/storage"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -143,6 +145,60 @@ func TestBuy(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, test.change, resp.Change)
+
+		} else {
+			assert.Equal(t, test.responseCode, rr.Result().StatusCode)
+		}
+
+	}
+
+	err = api.removeTestCases(testUsers)
+	assert.NoError(t, err)
+}
+
+func TestGetProduct(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	api, err := setupNewAPIServer()
+	assert.NoError(t, err)
+
+	testUsers := api.setupTestCases()
+
+	testCases := []struct {
+		productID    string
+		username     string
+		responseCode int
+	}{
+		{
+			productID:    uuid.Must(uuid.NewUUID()).String(),
+			username:     testUsers[0].Username,
+			responseCode: 404,
+		},
+		{
+			productID:    productId,
+			username:     testUsers[0].Username,
+			responseCode: 200,
+		},
+	}
+
+	for _, test := range testCases {
+		rr := httptest.NewRecorder()
+
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/product/%s", test.productID), nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", userToken[test.username])
+		assert.NoError(t, err)
+
+		api.handler.ServeHTTP(rr, req)
+
+		if rr.Result().StatusCode == http.StatusOK {
+			resp := models.Product{}
+			err = json.NewDecoder(rr.Result().Body).Decode(&resp)
+			assert.NoError(t, err)
+
+			assert.Equal(t, test.productID, resp.ID)
 
 		} else {
 			assert.Equal(t, test.responseCode, rr.Result().StatusCode)
