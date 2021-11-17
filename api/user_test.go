@@ -18,6 +18,7 @@ import (
 )
 
 var userToken = map[string]string{}
+var productId string
 
 func TestDeposit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -75,7 +76,6 @@ func TestDeposit(t *testing.T) {
 
 		} else {
 			assert.Equal(t, test.responseCode, rr.Result().StatusCode)
-			t.Log()
 		}
 
 	}
@@ -83,6 +83,75 @@ func TestDeposit(t *testing.T) {
 	err = api.removeTestCases(testUsers)
 	assert.NoError(t, err)
 
+}
+
+func TestBuy(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	api, err := setupNewAPIServer()
+	assert.NoError(t, err)
+
+	testUsers := api.setupTestCases()
+
+	testCases := []struct {
+		productID    string
+		username     string
+		quantity     int
+		responseCode int
+		change       []int
+	}{
+		{
+			productID:    productId,
+			username:     testUsers[1].Username,
+			quantity:     13,
+			responseCode: 403,
+		},
+		{
+			productID:    productId,
+			username:     testUsers[0].Username,
+			quantity:     63,
+			responseCode: 400,
+		},
+		{
+			productID:    productId,
+			username:     testUsers[0].Username,
+			quantity:     15,
+			responseCode: 200,
+			change:       []int{0, 1, 0, 0, 0},
+		},
+	}
+
+	for _, test := range testCases {
+		rr := httptest.NewRecorder()
+
+		buf, err := json.Marshal(&buyProductParams{
+			ProductID: test.productID,
+			Quantity:  test.quantity,
+		})
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest(http.MethodPost, "/buy", bytes.NewBuffer(buf))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", userToken[test.username])
+		assert.NoError(t, err)
+
+		api.handler.ServeHTTP(rr, req)
+
+		if rr.Result().StatusCode == http.StatusOK {
+			resp := buyProductResp{}
+			err = json.NewDecoder(rr.Result().Body).Decode(&resp)
+			assert.NoError(t, err)
+
+			assert.Equal(t, test.change, resp.Change)
+
+		} else {
+			assert.Equal(t, test.responseCode, rr.Result().StatusCode)
+		}
+
+	}
+
+	err = api.removeTestCases(testUsers)
+	assert.NoError(t, err)
 }
 
 func setupNewAPIServer() (*api, error) {
@@ -104,6 +173,8 @@ func (a *api) setupTestCases() []models.User {
 	coll := a.db.Collection("users")
 
 	buyer, _ := models.NewUser("buyer1", "123456", "buyer")
+	buyer.AddDeposit(models.Coins{10, 50, 100})
+
 	seller, _ := models.NewUser("seller1", "123456", "seller")
 
 	_, err := coll.InsertMany(context.Background(), []interface{}{
@@ -111,7 +182,7 @@ func (a *api) setupTestCases() []models.User {
 		seller,
 	})
 	if err != nil {
-		log.Fatalf("Failed to setup test cases: %s", err.Error())
+		log.Fatalf("Failed to setup user test cases: %s", err.Error())
 	}
 
 	buyerToken, _ := newAPIToken(buyer.Username, a.config.Secret)
@@ -126,7 +197,17 @@ func (a *api) setupTestCases() []models.User {
 		models.NewSession(seller.Username, sellerToken),
 	})
 	if err != nil {
-		log.Fatalf("Failed to setup test cases: %s", err.Error())
+		log.Fatalf("Failed to setup session test cases: %s", err.Error())
+	}
+
+	coll = a.db.Collection("products")
+
+	product := models.NewProduct("testing", 30, 10, seller.Username)
+	productId = product.ID
+
+	_, err = coll.InsertOne(context.Background(), product)
+	if err != nil {
+		log.Fatalf("Failed to setup product test cases: %s", err.Error())
 	}
 
 	return []models.User{*buyer, *seller}
