@@ -24,7 +24,7 @@ func (a *api) authenticationMiddleware(c *gin.Context) {
 
 	// check for authorization header except for /user URI with POST method.
 	if (c.Request.RequestURI == "/user" && strings.ToUpper(c.Request.Method) == http.MethodPost) ||
-		(c.Request.RequestURI == "/signin" && strings.ToUpper(c.Request.Method) == http.MethodPost) {
+		(c.Request.RequestURI == "/login" && strings.ToUpper(c.Request.Method) == http.MethodPost) {
 		c.Next()
 	} else {
 		authHeader := c.Request.Header.Get("Authorization")
@@ -59,7 +59,7 @@ func (a *api) authenticationMiddleware(c *gin.Context) {
 				return
 			}
 
-			if session.Token != authHeader {
+			if session.Token != authHeader && session.Status == "inactive" {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "Invalid session token"})
 				return
 			}

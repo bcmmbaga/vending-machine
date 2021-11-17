@@ -17,13 +17,13 @@ type apiTokenClaims struct {
 	Username string `json:"username"`
 }
 
-type signInParams struct {
+type logInParams struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-func (a *api) signin(c *gin.Context) {
-	params := signInParams{}
+func (a *api) logIn(c *gin.Context) {
+	params := logInParams{}
 	err := c.BindJSON(&params)
 	if err != nil {
 		if syntaxError, ok := err.(*json.SyntaxError); ok {
@@ -87,6 +87,22 @@ func (a *api) signin(c *gin.Context) {
 		"message": "There is already an active session using your account",
 	})
 
+}
+
+func (a *api) revokeAllSessions(c *gin.Context) {
+	username := c.GetString(usernameContext)
+	coll := a.db.Collection("sessions")
+
+	_, err := coll.UpdateMany(c.Request.Context(), bson.M{"username": username}, bson.M{"$set": bson.M{
+		"status": "inactive",
+	}})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to process logout request"})
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
 }
 
 // newAPIToken generate API token with 30 days expiring duration for authorizing other request.
