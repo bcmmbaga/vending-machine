@@ -16,13 +16,14 @@ type User struct {
 type Coins []int
 
 var (
-	acceptedCoins = map[int]bool{
+	acceptedCoinsMap = map[int]bool{
 		5:   true,
 		10:  true,
 		20:  true,
 		50:  true,
 		100: true,
 	}
+	acceptedCoins = []int{5, 10, 20, 50, 100}
 )
 
 func NewUser(username string, password string, role string) (*User, error) {
@@ -53,7 +54,7 @@ func (u *User) AddDeposit(coins Coins) error {
 	}
 
 	for _, coin := range coins {
-		if _, ok := acceptedCoins[coin]; !ok {
+		if _, ok := acceptedCoinsMap[coin]; !ok {
 			return errors.New("Coin not accepted")
 		}
 

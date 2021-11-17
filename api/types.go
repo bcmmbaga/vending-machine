@@ -18,8 +18,20 @@ type newProductParams struct {
 	Cost      int    `json:"cost" binding:"required"`
 }
 
-type UpdateProductParams struct {
+type updateProductParams struct {
 	Name      string `json:"name,omitempty"`
 	Available int    `json:"available,omitempty"`
 	Cost      int    `json:"cost,omitempty"`
+}
+
+type buyProductParams struct {
+	ProductID string `json:"productId" binding:"required"`
+	Quantity  int    `json:"quantity" binding:"required"`
+}
+
+type buyProductResp struct {
+	TotalSpent      int    `json:"totalSpent"`
+	ProductName     string `json:"productName"`
+	ProductQuantity int    `json:"productQuantity"`
+	Change          []int  `json:"change,omitempty"`
 }

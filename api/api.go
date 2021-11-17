@@ -53,6 +53,7 @@ func NewServer(config *vendingmachine.Config, conn *storage.Connection) *api {
 	r.POST("/logout", api.revokeAllSessions)
 	r.POST("/logout/all", api.revokeAllSessions)
 	r.POST("/reset", api.buyersOnlyMiddleware(), api.ResetDeposit)
+	r.POST("/buy", api.buyersOnlyMiddleware(), api.buyProduct)
 
 	api.handler = r
 
