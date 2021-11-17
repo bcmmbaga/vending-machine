@@ -15,7 +15,7 @@ import (
 // and Authotization header for all endpoint except user signin
 func (a *api) authenticationMiddleware(c *gin.Context) {
 	contType := c.Request.Header.Get("Content-Type")
-	if contType != "application/json" {
+	if (c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut) && contType != "application/json" {
 		c.AbortWithStatusJSON(http.StatusUnsupportedMediaType, gin.H{
 			"message": "unsupported content type",
 		})

@@ -41,6 +41,13 @@ func NewServer(config *vendingmachine.Config, conn *storage.Connection) *api {
 	user.POST("", api.SignUpNewUser)
 	user.DELETE("", api.DeleteUser)
 
+	product := r.Group("/product")
+	product.GET("/:id", api.GetProduct)
+	product.Use(api.sellerOnlyMiddleware())
+	product.POST("", api.NewProduct)
+	product.PUT("/:id", api.UpdateProduct)
+	product.DELETE("/:id", api.DeleteProduct)
+
 	r.POST("/deposit", api.buyersOnlyMiddleware(), api.deposit)
 	r.POST("/login", api.logIn)
 	r.POST("/logout", api.revokeAllSessions)

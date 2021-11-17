@@ -34,13 +34,13 @@ func (a *api) SignUpNewUser(c *gin.Context) {
 		return
 	}
 
-	_, err = coll.InsertOne(c.Request.Context(), &user)
+	_, err = coll.InsertOne(c.Request.Context(), user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save new user"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, &user)
+	c.JSON(http.StatusCreated, user)
 }
 
 func (a *api) GetUser(c *gin.Context) {
