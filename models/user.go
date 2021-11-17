@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -59,7 +58,6 @@ func (u *User) AddDeposit(coins Coins) error {
 		}
 
 		u.Deposit += coin
-		fmt.Println(u.Deposit)
 
 	}
 

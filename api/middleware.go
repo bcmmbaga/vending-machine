@@ -78,28 +78,39 @@ func (a *api) authenticationMiddleware(c *gin.Context) {
 }
 
 // buyersOnlyMiddleware check whether the user making the request has buyer's role.
-func (a *api) buyersOnlyMiddleware(c *gin.Context) {
-	username := c.GetString(usernameContext)
+func (a *api) buyersOnlyMiddleware() gin.HandlerFunc {
+	return a.roleMiddleware("buyer")
+}
 
-	user := models.User{}
+// buyersOnlyMiddleware check whether the user making the request has seller's role.
+func (a *api) sellerOnlyMiddleware() gin.HandlerFunc {
+	return a.roleMiddleware("seller")
+}
 
-	coll := a.db.Collection("users")
-	err := coll.FindOne(c.Request.Context(), bson.M{"username": username}).Decode(&user)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "Account not found"})
+func (a *api) roleMiddleware(role string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username := c.GetString(usernameContext)
+
+		user := models.User{}
+
+		coll := a.db.Collection("users")
+		err := coll.FindOne(c.Request.Context(), bson.M{"username": username}).Decode(&user)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "Account not found"})
+				return
+			}
+
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "Failed to process the request"})
 			return
 		}
 
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "Failed to process the request"})
-		return
-	}
+		ok := user.HasRole(role)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "Account permission failed"})
+			return
+		}
 
-	ok := user.HasRole("buyer")
-	if !ok {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "Account permission failed"})
-		return
+		c.Next()
 	}
-
-	c.Next()
 }

@@ -12,6 +12,7 @@ import (
 	vendingmachine "github.com/bcmmbaga/vending-machine"
 	"github.com/bcmmbaga/vending-machine/models"
 	"github.com/bcmmbaga/vending-machine/storage"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -19,7 +20,7 @@ import (
 var userToken = map[string]string{}
 
 func TestDeposit(t *testing.T) {
-	// gin.SetMode(gin.TestMode)
+	gin.SetMode(gin.TestMode)
 
 	api, err := setupNewAPIServer()
 	assert.NoError(t, err)
@@ -67,7 +68,6 @@ func TestDeposit(t *testing.T) {
 
 		if rr.Result().StatusCode == http.StatusOK {
 			user := models.User{}
-			// assert.Equal(t, "hdsfdsf", rr.Body.String())
 			err = json.NewDecoder(rr.Result().Body).Decode(&user)
 			assert.NoError(t, err)
 
