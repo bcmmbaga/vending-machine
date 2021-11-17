@@ -56,7 +56,9 @@ func makeChange(change int) []int {
 		change = change - changeCoinCount[i]*coin
 	}
 
-	sort.Sort(sort.Reverse(sort.IntSlice(changeCoinCount)))
+	for i, j := 0, len(changeCoinCount)-1; i < j; i, j = i+1, j-1 {
+		changeCoinCount[i], changeCoinCount[j] = changeCoinCount[j], changeCoinCount[i]
+	}
 
 	return changeCoinCount
 }
