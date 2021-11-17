@@ -44,7 +44,7 @@ func (a *api) authenticationMiddleware(c *gin.Context) {
 
 			claims, ok := token.Claims.(*apiTokenClaims)
 			if !ok && !token.Valid {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 					"message": "Invalid authorization token",
 				})
 				return

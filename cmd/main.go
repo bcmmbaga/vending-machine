@@ -11,7 +11,7 @@ import (
 var serverConfig vendingmachine.Config
 
 func init() {
-	config, err := vendingmachine.LoadConfiguration("")
+	config, err := vendingmachine.LoadConfiguration(".env")
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

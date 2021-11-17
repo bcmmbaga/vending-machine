@@ -16,9 +16,11 @@ type Config struct {
 }
 
 func loadEnvironment(filename string) error {
-	err := godotenv.Load()
+	err := godotenv.Load(filename)
+
 	// handle if .env file does not exist, this is OK
 	if os.IsNotExist(err) {
+		println(err.Error())
 		return nil
 	}
 
